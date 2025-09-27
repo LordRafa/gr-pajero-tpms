@@ -104,7 +104,7 @@ blocks:
     bus_structure: null
     coordinate: [8, 248.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: sps
   id: variable
   parameters:
@@ -219,7 +219,7 @@ blocks:
     bus_structure: null
     coordinate: [8, 128.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_float_to_uchar_0
   id: blocks_float_to_uchar
   parameters:
@@ -337,7 +337,7 @@ blocks:
     bus_structure: null
     coordinate: [224, 152.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: digital_symbol_sync_xx_0
   id: digital_symbol_sync_xx
   parameters:
@@ -374,9 +374,9 @@ blocks:
       \ QTableWidget, QTableWidgetItem\nfrom PyQt5.QtCore import QTimer, Qt\n\nclass\
       \ Tpms_Widget(QFrame):\n    def __init__(self):\n        QFrame.__init__(self)\n\
       \n        self.setFixedHeight(200)\n\n        self.tpms_info = {}\n\n      \
-      \  # Table widget\n        self.table = QTableWidget()\n        self.table.setColumnCount(4)\n\
-      \        self.table.setHorizontalHeaderLabels([\"ID\", \"Pressure\", \"Temperature\"\
-      , \"Seconds Since Update\"])\n        self.table.horizontalHeader().setStretchLastSection(True)\n\
+      \  # Table widget\n        self.table = QTableWidget()\n        self.table.setColumnCount(6)\n\
+      \        self.table.setHorizontalHeaderLabels([\"tid\", \"PSI\", \"Temp (C\xBA\
+      )\", \"RAD/s\", \"KM/h\" ,\"Seconds Since Update\"])\n        self.table.horizontalHeader().setStretchLastSection(True)\n\
       \n        # Layout\n        layout = QVBoxLayout()\n        layout.addWidget(self.table)\n\
       \        self.setLayout(layout)\n\n        # Timer to update table every second\n\
       \        self.timer = QTimer()\n        self.timer.timeout.connect(self.update_table)\n\
@@ -385,44 +385,49 @@ blocks:
       \  # Resize table if number of entries changed\n        self.table.setRowCount(len(self.tpms_info))\n\
       \n        # Fill table\n        now = time.time()\n        for row, (id_, values)\
       \ in enumerate(self.tpms_info.items()):\n            seconds_since = int(now\
-      \ - values[\"last_update\"])\n\n            self.table.setItem(row, 0, QTableWidgetItem(str(id_)))\n\
-      \            self.table.setItem(row, 1, QTableWidgetItem(str(values['Pressure'])))\n\
-      \            self.table.setItem(row, 2, QTableWidgetItem(str(values['Temperature'])))\n\
-      \            self.table.setItem(row, 3, QTableWidgetItem(str(seconds_since)))\n\
-      \n            # Align center\n            for col in range(4):\n           \
+      \ - values[\"timestamp\"])\n\n            self.table.setItem(row, 0, QTableWidgetItem(str(id_)))\n\
+      \            self.table.setItem(row, 1, QTableWidgetItem(str(values['psi'])))\n\
+      \            self.table.setItem(row, 2, QTableWidgetItem(str(values['temp'])))\n\
+      \            self.table.setItem(row, 3, QTableWidgetItem(str(values['rad_s'])))\n\
+      \            self.table.setItem(row, 4, QTableWidgetItem(str(values['km_h'])))\n\
+      \            self.table.setItem(row, 5, QTableWidgetItem(str(seconds_since)))\n\
+      \n            # Align center\n            for col in range(6):\n           \
       \     self.table.item(row, col).setTextAlignment(Qt.AlignCenter)\n\n    def\
-      \ add_tpms(self, sensor_id, pressure, temperature):\n        now = time.time()\n\
-      \        self.tpms_info[sensor_id] = {\"Pressure\": pressure,  \"Temperature\"\
-      : temperature, \"last_update\": now}\n\n\n\nclass Tpms_QT(gr.basic_block, Tpms_Widget):\n\
-      \    \n    tpms_qt_init = False\n    \n    def __init__(self, GUI_Hint=[0, 0]):\n\
-      \        \"\"\"QT TPMS\"\"\"\n        gr.basic_block.__init__(\n           \
-      \ self,\n            name=\"QT TPMS\",\n            in_sig=[],\n           \
-      \ out_sig=[],\n        )\n        \n        # Register message input\n     \
-      \   self.message_port_register_in(pmt.intern(\"in\"))\n        self.set_msg_handler(pmt.intern(\"\
-      in\"), self.handle_msg)\n        self.GUI_Hint = GUI_Hint\n\n    def handle_msg(self,\
-      \ msg):\n        if pmt.is_dict(msg):\n            tid = pmt.dict_ref(msg, pmt.intern(\"\
-      id\"), pmt.PMT_NIL)\n            pressure = pmt.dict_ref(msg, pmt.intern(\"\
-      pressure\"), pmt.PMT_NIL)\n            temp = pmt.dict_ref(msg, pmt.intern(\"\
-      temperature\"), pmt.PMT_NIL)\n            self.add_tpms(tid, pressure, temp)\n\
-      \n    def initGUI(self, top_grid_layout):\n        if self.tpms_qt_init == False:\n\
-      \            self.tpms_qt_init = True\n            Tpms_Widget.__init__(self)\n\
-      \            GUI_Hint = self.GUI_Hint\n            match len(GUI_Hint):\n  \
-      \              case 2: top_grid_layout.addWidget(self, GUI_Hint[0], GUI_Hint[1])\n\
-      \                case 4: top_grid_layout.addWidget(self, GUI_Hint[0], GUI_Hint[1],\
-      \ GUI_Hint[2], GUI_Hint[3])\n                case _: top_grid_layout.addWidget(self)\n\
-      \n"
+      \ add_tpms(self, sid, psi, temp, rad_s, km_h):\n        now = time.time()\n\
+      \        self.tpms_info[sid] = {\"psi\": psi,  \"temp\": temp, \"rad_s\": rad_s,\
+      \ \"km_h\": km_h, \"timestamp\": now}\n\n\n\nclass Tpms_QT(gr.basic_block, Tpms_Widget):\n\
+      \    \n    tpms_qt_init = False\n    \n    def __init__(self, GUI_Hint=[0, 0],\
+      \ tyre_diameter_mm = 1):\n        \"\"\"QT TPMS\"\"\"\n        gr.basic_block.__init__(\n\
+      \            self,\n            name=\"QT TPMS\",\n            in_sig=[],\n\
+      \            out_sig=[],\n        )\n        \n        # Register message input\n\
+      \        self.message_port_register_in(pmt.intern(\"in\"))\n        self.set_msg_handler(pmt.intern(\"\
+      in\"), self.handle_msg)\n        self.GUI_Hint = GUI_Hint\n        self.tyre_diameter_mm\
+      \ = tyre_diameter_mm\n\n    def handle_msg(self, msg):\n        if pmt.is_dict(msg):\n\
+      \            sid = pmt.dict_ref(msg, pmt.intern(\"sid\"), pmt.PMT_NIL)\n   \
+      \         psi = pmt.dict_ref(msg, pmt.intern(\"psi\"), pmt.PMT_NIL)\n      \
+      \      temp = pmt.dict_ref(msg, pmt.intern(\"temp\"), pmt.PMT_NIL)\n       \
+      \     rad_s = pmt.dict_ref(msg, pmt.intern(\"rad_s\"), pmt.PMT_NIL)\n      \
+      \      km_h = round(pmt.to_long(rad_s) * (self.tyre_diameter_mm / 2000) * 3.6)\n\
+      \            self.add_tpms(sid, psi, temp, rad_s, km_h)\n\n    def initGUI(self,\
+      \ top_grid_layout):\n        if self.tpms_qt_init == False:\n            self.tpms_qt_init\
+      \ = True\n            Tpms_Widget.__init__(self)\n            GUI_Hint = self.GUI_Hint\n\
+      \            match len(GUI_Hint):\n                case 2: top_grid_layout.addWidget(self,\
+      \ GUI_Hint[0], GUI_Hint[1])\n                case 4: top_grid_layout.addWidget(self,\
+      \ GUI_Hint[0], GUI_Hint[1], GUI_Hint[2], GUI_Hint[3])\n                case\
+      \ _: top_grid_layout.addWidget(self)\n\n"
     affinity: ''
     alias: ''
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
+    tyre_diameter_mm: '776'
   states:
-    _io_cache: ('QT TPMS', 'Tpms_QT', [('GUI_Hint', '[0, 0]')], [('in', 'message',
-      1)], [], 'QT TPMS', ['GUI_Hint'])
+    _io_cache: ('QT TPMS', 'Tpms_QT', [('GUI_Hint', '[0, 0]'), ('tyre_diameter_mm',
+      '1')], [('in', 'message', 1)], [], 'QT TPMS', ['GUI_Hint', 'tyre_diameter_mm'])
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [728, 152.0]
+    coordinate: [696, 144.0]
     rotation: 180
     state: enabled
 - name: epy_block_2
@@ -443,13 +448,13 @@ blocks:
       \ // self.size\n        for i in range(n):\n            chunk = self._buffer[i*self.size:(i+1)*self.size]\
       \    \n            fields = struct.unpack(self.fmt, chunk)\n            msg\
       \ = {\n                \"bytes\": chunk.hex(' '),\n                \"state\"\
-      : hex(fields[0]),\n                \"id\": fields[1].hex(),\n              \
-      \  \"flags\": (fields[2] & 0xF0) >> 4,\n                \"repeat\": fields[2]\
-      \ & 0x0F,\n                \"pressure\": round(fields[3] * 1.364),\n       \
-      \         \"temperature\": fields[4] - 50,\n                \"maybe_battery\"\
-      : fields[5],\n                \"crc\": hex(fields[6]),\n            }\n    \
-      \        \n            if self.is_crc_valid(chunk[1:self.size -1], chunk[self.size\
-      \ - 1]):\n                self.message_port_pub(pmt.intern(\"out\"), pmt.to_pmt(msg))\n\
+      : hex(fields[0]),\n                \"sid\": fields[1].hex(),\n             \
+      \   \"flags\": (fields[2] & 0xF0) >> 4,\n                \"repeat\": fields[2]\
+      \ & 0x0F,\n                \"psi\": round(fields[3] * 1.364),\n            \
+      \    \"temp\": fields[4] - 50,\n                \"rad_s\": fields[5],\n    \
+      \            \"crc\": hex(fields[6]),\n            }\n            \n       \
+      \     if self.is_crc_valid(chunk[1:self.size -1], chunk[self.size - 1]):\n \
+      \               self.message_port_pub(pmt.intern(\"out\"), pmt.to_pmt(msg))\n\
       \            else:\n                self.message_port_pub(pmt.intern(\"error\"\
       ), pmt.to_pmt(msg))\n            \n        # keep leftover bytes\n        self._buffer\
       \ = self._buffer[n*self.size:]\n\n        # tell scheduler we consumed everything\
@@ -1020,7 +1025,7 @@ blocks:
     comment: ''
     dev_args: ''
     freq_correction: '0'
-    gain: '20'
+    gain: '30'
     maxoutbuf: '0'
     minoutbuf: '0'
     samp_rate: samp_rate
@@ -1031,7 +1036,7 @@ blocks:
     bus_structure: null
     coordinate: [464, 240.0]
     rotation: 180
-    state: enabled
+    state: disabled
 
 connections:
 - [analog_agc_xx_0, '0', freq_xlating_fir_filter_xxx_0, '0']
