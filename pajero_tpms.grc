@@ -365,6 +365,65 @@ blocks:
     coordinate: [512, 356.0]
     rotation: 0
     state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    GUI_Hint: '[0,0,1,2]'
+    _source_code: "\"\"\"\nQT TPMS\n\"\"\"\n\nimport pmt\nimport struct\nimport time\n\
+      \nfrom gnuradio import gr\nfrom PyQt5.QtWidgets import QFrame, QVBoxLayout,\
+      \ QTableWidget, QTableWidgetItem\nfrom PyQt5.QtCore import QTimer, Qt\n\nclass\
+      \ Tpms_Widget(QFrame):\n    def __init__(self):\n        QFrame.__init__(self)\n\
+      \n        self.setFixedHeight(200)\n\n        self.tpms_info = {}\n\n      \
+      \  # Table widget\n        self.table = QTableWidget()\n        self.table.setColumnCount(4)\n\
+      \        self.table.setHorizontalHeaderLabels([\"ID\", \"Pressure\", \"Temperature\"\
+      , \"Seconds Since Update\"])\n        self.table.horizontalHeader().setStretchLastSection(True)\n\
+      \n        # Layout\n        layout = QVBoxLayout()\n        layout.addWidget(self.table)\n\
+      \        self.setLayout(layout)\n\n        # Timer to update table every second\n\
+      \        self.timer = QTimer()\n        self.timer.timeout.connect(self.update_table)\n\
+      \        self.timer.start(1000)  # 1000 ms = 1s\n\n        # Initial population\n\
+      \        self.update_table()\n        \n    def update_table(self):\n      \
+      \  # Resize table if number of entries changed\n        self.table.setRowCount(len(self.tpms_info))\n\
+      \n        # Fill table\n        now = time.time()\n        for row, (id_, values)\
+      \ in enumerate(self.tpms_info.items()):\n            seconds_since = int(now\
+      \ - values[\"last_update\"])\n\n            self.table.setItem(row, 0, QTableWidgetItem(str(id_)))\n\
+      \            self.table.setItem(row, 1, QTableWidgetItem(str(values['Pressure'])))\n\
+      \            self.table.setItem(row, 2, QTableWidgetItem(str(values['Temperature'])))\n\
+      \            self.table.setItem(row, 3, QTableWidgetItem(str(seconds_since)))\n\
+      \n            # Align center\n            for col in range(4):\n           \
+      \     self.table.item(row, col).setTextAlignment(Qt.AlignCenter)\n\n    def\
+      \ add_tpms(self, sensor_id, pressure, temperature):\n        now = time.time()\n\
+      \        self.tpms_info[sensor_id] = {\"Pressure\": pressure,  \"Temperature\"\
+      : temperature, \"last_update\": now}\n\n\n\nclass Tpms_QT(gr.basic_block, Tpms_Widget):\n\
+      \    \n    tpms_qt = None\n    \n    def __init__(self, GUI_Hint=[0, 0]):\n\
+      \        \"\"\"QT TPMS\"\"\"\n        gr.basic_block.__init__(\n           \
+      \ self,\n            name=\"QT TPMS\",\n            in_sig=[],\n           \
+      \ out_sig=[],\n        )\n        \n        # Register message input\n     \
+      \   self.message_port_register_in(pmt.intern(\"in\"))\n        self.set_msg_handler(pmt.intern(\"\
+      in\"), self.handle_msg)\n        self.GUI_Hint = GUI_Hint\n\n    def handle_msg(self,\
+      \ msg):\n        if pmt.is_dict(msg):\n            tid = pmt.dict_ref(msg, pmt.intern(\"\
+      id\"), pmt.PMT_NIL)\n            pressure = pmt.dict_ref(msg, pmt.intern(\"\
+      pressure\"), pmt.PMT_NIL)\n            temp = pmt.dict_ref(msg, pmt.intern(\"\
+      temperature\"), pmt.PMT_NIL)\n            self.add_tpms(tid, pressure, temp)\n\
+      \n    def initGUI(self, top_grid_layout):\n        if self.tpms_qt == None:\n\
+      \            Tpms_Widget.__init__(self)\n            GUI_Hint = self.GUI_Hint\n\
+      \            match len(GUI_Hint):\n                case 2: top_grid_layout.addWidget(self,\
+      \ GUI_Hint[0], GUI_Hint[1])\n                case 4: top_grid_layout.addWidget(self,\
+      \ GUI_Hint[0], GUI_Hint[1], GUI_Hint[2], GUI_Hint[3])\n                case\
+      \ _: top_grid_layout.addWidget(self)\n\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('QT TPMS', 'Tpms_QT', [('GUI_Hint', '[0, 0]')], [('in', 'message',
+      1)], [], 'QT TPMS', ['GUI_Hint'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [728, 152.0]
+    rotation: 180
+    state: enabled
 - name: epy_block_2
   id: epy_block
   parameters:
@@ -932,6 +991,22 @@ blocks:
     coordinate: [632, 552.0]
     rotation: 0
     state: enabled
+- name: snippet_0
+  id: snippet
+  parameters:
+    alias: ''
+    code: "for _, field in vars(self).items():\n\tif type(field).__name__ == \"Tpms_QT\"\
+      :\n\t\tfield.initGUI(self.top_grid_layout)"
+    comment: ''
+    priority: '0'
+    section: main_after_init
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [440, 152.0]
+    rotation: 0
+    state: enabled
 - name: soapy_rtlsdr_source_0
   id: soapy_rtlsdr_source
   parameters:
@@ -956,20 +1031,6 @@ blocks:
     coordinate: [464, 240.0]
     rotation: 180
     state: disabled
-- name: ttltools_tpms_0
-  id: ttltools_tpms
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    gui_hint: 0,0,1,2
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [792, 160.0]
-    rotation: 180
-    state: enabled
 
 connections:
 - [analog_agc_xx_0, '0', freq_xlating_fir_filter_xxx_0, '0']
@@ -994,7 +1055,7 @@ connections:
 - [digital_symbol_sync_xx_0, '1', qtgui_time_sink_x_0_0_0, '2']
 - [epy_block_2, error, blocks_message_debug_0_0, log]
 - [epy_block_2, out, blocks_message_debug_0, log]
-- [epy_block_2, out, ttltools_tpms_0, in]
+- [epy_block_2, out, epy_block_0, in]
 - [epy_block_3, '0', blocks_pack_k_bits_bb_0, '0']
 - [freq_xlating_fir_filter_xxx_0, '0', analog_simple_squelch_cc_0, '0']
 - [freq_xlating_fir_filter_xxx_0, '0', qtgui_freq_sink_x_0_0, '0']
