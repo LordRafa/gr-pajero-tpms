@@ -394,7 +394,7 @@ blocks:
       \ add_tpms(self, sensor_id, pressure, temperature):\n        now = time.time()\n\
       \        self.tpms_info[sensor_id] = {\"Pressure\": pressure,  \"Temperature\"\
       : temperature, \"last_update\": now}\n\n\n\nclass Tpms_QT(gr.basic_block, Tpms_Widget):\n\
-      \    \n    tpms_qt = None\n    \n    def __init__(self, GUI_Hint=[0, 0]):\n\
+      \    \n    tpms_qt_init = False\n    \n    def __init__(self, GUI_Hint=[0, 0]):\n\
       \        \"\"\"QT TPMS\"\"\"\n        gr.basic_block.__init__(\n           \
       \ self,\n            name=\"QT TPMS\",\n            in_sig=[],\n           \
       \ out_sig=[],\n        )\n        \n        # Register message input\n     \
@@ -404,12 +404,13 @@ blocks:
       id\"), pmt.PMT_NIL)\n            pressure = pmt.dict_ref(msg, pmt.intern(\"\
       pressure\"), pmt.PMT_NIL)\n            temp = pmt.dict_ref(msg, pmt.intern(\"\
       temperature\"), pmt.PMT_NIL)\n            self.add_tpms(tid, pressure, temp)\n\
-      \n    def initGUI(self, top_grid_layout):\n        if self.tpms_qt == None:\n\
-      \            Tpms_Widget.__init__(self)\n            GUI_Hint = self.GUI_Hint\n\
-      \            match len(GUI_Hint):\n                case 2: top_grid_layout.addWidget(self,\
-      \ GUI_Hint[0], GUI_Hint[1])\n                case 4: top_grid_layout.addWidget(self,\
-      \ GUI_Hint[0], GUI_Hint[1], GUI_Hint[2], GUI_Hint[3])\n                case\
-      \ _: top_grid_layout.addWidget(self)\n\n"
+      \n    def initGUI(self, top_grid_layout):\n        if self.tpms_qt_init == False:\n\
+      \            self.tpms_qt_init = True\n            Tpms_Widget.__init__(self)\n\
+      \            GUI_Hint = self.GUI_Hint\n            match len(GUI_Hint):\n  \
+      \              case 2: top_grid_layout.addWidget(self, GUI_Hint[0], GUI_Hint[1])\n\
+      \                case 4: top_grid_layout.addWidget(self, GUI_Hint[0], GUI_Hint[1],\
+      \ GUI_Hint[2], GUI_Hint[3])\n                case _: top_grid_layout.addWidget(self)\n\
+      \n"
     affinity: ''
     alias: ''
     comment: ''
